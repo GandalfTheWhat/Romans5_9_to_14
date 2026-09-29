@@ -37,6 +37,25 @@
     .good { color:var(--green); } .needs-work { color:var(--red); }
     footer { color:var(--muted); font-size:.78rem; margin-top:17px; }
     @media(max-width:600px) { main { margin:18px auto; } .verse { font-size:1.04rem; line-height:2.9; } input.blank { width:82px; } }
+    /* Dark mode */
+    :root {
+      color-scheme: dark;
+      --ink: #d5dbe2;
+      --muted: #9aa5b1;
+      --paper: #171c23;
+      --line: #343b45;
+      --blue: #729db9;
+      --green: #8ac7a0;
+      --red: #e39890;
+    }
+    body { background: #0d1117; }
+    select, button, input.blank { background: #222a34; color: var(--ink); border-color: #4b5663; }
+    button:hover { background: #303b48; }
+    button.primary { background: #315b75; color: #fff; }
+    button.primary:hover { background: #3b6b89; }
+    input.blank.correct { background: #183527; }
+    input.blank.incorrect { background: #3b2427; }
+    input.blank.revealed { background: #3b3421; }
   </style>
 </head>
 <body>
