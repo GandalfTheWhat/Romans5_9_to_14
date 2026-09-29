@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Romans 5:9–14 Blank Drill</title>
+  <style>
+    :root { color-scheme: light; --ink:#1b2932; --muted:#5f6d75; --paper:#fffdf8; --line:#d9e1e2; --blue:#225e79; --green:#14724a; --red:#a73d38; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#eaf0ed; color:var(--ink); font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+    main { max-width:940px; margin:34px auto; padding:0 16px 48px; }
+    header { margin-bottom:20px; }
+    h1 { margin:0 0 4px; font-size:clamp(1.6rem,4vw,2.3rem); letter-spacing:-.035em; }
+    p { margin:.3em 0; }
+    .muted { color:var(--muted); }
+    .panel { background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:clamp(16px,3vw,28px); box-shadow:0 8px 26px #243d3910; }
+    .controls,.actions { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+    .controls { padding-bottom:18px; border-bottom:1px solid var(--line); }
+    label { display:grid; gap:4px; font-size:.85rem; font-weight:700; }
+    select,button { font:inherit; border-radius:8px; min-height:42px; }
+    select { padding:7px 34px 7px 10px; color:var(--ink); background:white; border:1px solid #9fadb0; }
+    button { padding:8px 14px; border:1px solid #a7b4b6; color:var(--ink); background:#fff; font-weight:700; cursor:pointer; }
+    button:hover { background:#e7f2f1; }
+    button:focus-visible,select:focus-visible,input:focus-visible { outline:3px solid #79b4c2; outline-offset:2px; }
+    button.primary { color:white; background:var(--blue); border-color:var(--blue); }
+    button.primary:hover { background:#164b64; }
+    .actions { margin-top:20px; }
+    #round { margin:17px 0 8px; font-size:.9rem; }
+    .verse { font-size:1.13rem; line-height:2.75; margin:7px 0 16px; }
+    .verse-num { color:var(--blue); font-size:.78rem; font-weight:800; vertical-align:super; margin-right:6px; }
+    input.blank { width:clamp(75px,12vw,124px); height:38px; margin:0 3px; padding:4px 7px; border:1.5px solid #839da5; border-radius:6px; color:var(--ink); background:#f0f7f7; text-align:center; font:600 1rem system-ui,sans-serif; }
+    input.blank.correct { border-color:var(--green); background:#e7f6ec; }
+    input.blank.incorrect { border-color:var(--red); background:#fff0ed; }
+    input.blank.revealed { border-color:#9a751e; background:#fff7d8; }
+    .answer { color:var(--red); font-size:.76rem; font-weight:700; margin-right:4px; white-space:nowrap; }
+    #result { min-height:1.5em; margin-top:14px; font-weight:700; }
+    .good { color:var(--green); } .needs-work { color:var(--red); }
+    footer { color:var(--muted); font-size:.78rem; margin-top:17px; }
+    @media(max-width:600px) { main { margin:18px auto; } .verse { font-size:1.04rem; line-height:2.9; } input.blank { width:82px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Romans 5:9–14</h1>
+    <p class="muted">Fill the missing words from memory. Check your work, then draw another set.</p>
+  </header>
+  <div class="panel">
+    <div class="controls">
+      <label>Verses
+        <select id="range">
+          <option value="all">9–14</option>
+          <option value="early">9–11</option>
+          <option value="late">12–14</option>
+          <option value="9">Verse 9</option><option value="10">Verse 10</option>
+          <option value="11">Verse 11</option><option value="12">Verse 12</option>
+          <option value="13">Verse 13</option><option value="14">Verse 14</option>
+        </select>
+      </label>
+      <label>Missing words
+        <select id="density">
+          <option value="0.2" selected>Light · 20%</option>
+          <option value="0.35">Medium · 35%</option>
+          <option value="0.5">Heavy · 50%</option>
+        </select>
+      </label>
+      <button class="primary" id="new">New blanks</button>
+    </div>
+    <div id="round" class="muted" aria-live="polite"></div>
+    <div id="passage"></div>
+    <div class="actions">
+      <button class="primary" id="check">Check answers</button>
+      <button id="reveal">Show answers</button>
+    </div>
+    <div id="result" role="status" aria-live="polite"></div>
+  </div>
+  <footer>ESV wording from the Romans 5 passage used in your earlier trainer. Runs in the browser without an account or connection.</footer>
+</main>
+<script>
+  const verses = [
+    [9, 'Since, therefore, we have now been justified by his blood, much more shall we be saved by him from the wrath of God.'],
+    [10, 'For if while we were enemies we were reconciled to God by the death of his Son, much more, now that we are reconciled, shall we be saved by his life.'],
+    [11, 'More than that, we also rejoice in God through our Lord Jesus Christ, through whom we have now received reconciliation.'],
+    [12, 'Therefore, just as sin came into the world through one man, and death through sin, and so death spread to all men because all sinned—'],
+    [13, 'for sin indeed was in the world before the law was given, but sin is not counted where there is no law.'],
+    [14, 'Yet death reigned from Adam to Moses, even over those whose sinning was not like the transgression of Adam, who was a type of the one who was to come.']
+  ];
+  const $ = id => document.getElementById(id);
+  const tokenized = verses.map(([number,text]) => ({number, parts:text.match(/\p{L}+(?:['’]\p{L}+)?|[^\p{L}]+/gu)}));
+  const usage = new Map();
+  let recent = [], round = 0, selected = new Set();
+
+  function activeVerses() {
+    const choice = $('range').value;
+    return tokenized.filter(v => choice === 'all' ||
+      (choice === 'early' && v.number <= 11) ||
+      (choice === 'late' && v.number >= 12) || String(v.number) === choice);
+  }
+  function wordParts(v) {
+    return v.parts.map((part,index) => ({part,index,key:`${v.number}:${index}`}))
+      .filter(x => /^\p{L}/u.test(x.part));
+  }
+  function shuffle(array) {
+    const a = [...array];
+    for (let i=a.length-1;i>0;i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+  function chooseSet() {
+    const next = new Set();
+    // Balance each verse, then favor words that have appeared less often.
+    for (const verse of activeVerses()) {
+      const words = wordParts(verse);
+      const count = Math.max(1, Math.round(words.length * Number($('density').value)));
+      const candidates = shuffle(words).sort((a,b) => {
+        const penalty = key => (usage.get(key)||0)*3 +
+          (recent[0]?.has(key) ? 6 : 0) + (recent[1]?.has(key) ? 2 : 0);
+        return penalty(a.key) - penalty(b.key);
+      });
+      candidates.slice(0,count).forEach(x => next.add(x.key));
+    }
+    for (const key of next) usage.set(key,(usage.get(key)||0)+1);
+    recent.unshift(next); recent = recent.slice(0,2);
+    return next;
+  }
+  function draw() {
+    selected = chooseSet(); round++;
+    $('passage').replaceChildren(); $('result').textContent = '';
+    $('round').textContent = `Set ${round} · ${selected.size} blanks · Press Enter to move to the next blank`;
+    for (const verse of activeVerses()) {
+      const p = document.createElement('p'); p.className = 'verse';
+      const n = document.createElement('span'); n.className = 'verse-num';
+      n.textContent = verse.number; p.append(n);
+      verse.parts.forEach((part,index) => {
+        const key = `${verse.number}:${index}`;
+        if (!selected.has(key)) { p.append(document.createTextNode(part)); return; }
+        const input = document.createElement('input'); input.className = 'blank';
+        input.type = 'text'; input.autocomplete = 'off'; input.autocapitalize = 'off';
+        input.spellcheck = false; input.dataset.answer = part;
+        input.setAttribute('aria-label',`Missing word in verse ${verse.number}`);
+        input.addEventListener('input',() => {
+          input.classList.remove('correct','incorrect','revealed');
+          input.nextElementSibling?.classList.contains('answer') && input.nextElementSibling.remove();
+          $('result').textContent = '';
+        });
+        p.append(input);
+      });
+      $('passage').append(p);
+    }
+    const inputs = [...document.querySelectorAll('.blank')];
+    inputs.forEach((input,i) => input.addEventListener('keydown',event => {
+      if (event.key === 'Enter') { event.preventDefault(); (inputs[i+1] || $('check')).focus(); }
+    }));
+    inputs[0]?.focus();
+  }
+  const normalized = s => s.trim().toLocaleLowerCase().replace(/[‘’]/g,"'");
+  function check() {
+    const inputs = [...document.querySelectorAll('.blank')];
+    let correct = 0;
+    for (const input of inputs) {
+      input.nextElementSibling?.classList.contains('answer') && input.nextElementSibling.remove();
+      const right = normalized(input.value) === normalized(input.dataset.answer);
+      input.classList.toggle('correct',right);
+      input.classList.toggle('incorrect',!right);
+      input.classList.remove('revealed');
+      if (right) correct++;
+      else {
+        const answer = document.createElement('span'); answer.className = 'answer';
+        answer.textContent = input.dataset.answer;
+        input.after(answer);
+      }
+    }
+    $('result').textContent = `${correct} of ${inputs.length} correct${correct === inputs.length ? ' — well done.' : '. Correct the red blanks and check again.'}`;
+    $('result').className = correct === inputs.length ? 'good' : 'needs-work';
+  }
+  function reveal() {
+    for (const input of document.querySelectorAll('.blank')) {
+      input.nextElementSibling?.classList.contains('answer') && input.nextElementSibling.remove();
+      input.value = input.dataset.answer;
+      input.classList.remove('correct','incorrect'); input.classList.add('revealed');
+    }
+    $('result').textContent = 'Answers shown. Choose New blanks for another set.';
+    $('result').className = '';
+  }
+  $('new').addEventListener('click',draw);
+  $('range').addEventListener('change',draw);
+  $('density').addEventListener('change',draw);
+  $('check').addEventListener('click',check);
+  $('reveal').addEventListener('click',reveal);
+  draw();
+</script>
+</body>
+</html>
